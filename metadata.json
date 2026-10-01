@@ -1,0 +1,8 @@
+{
+  "name": "AI Metadata Cleaner",
+  "description": "Clean, inspect, and remove sensitive EXIF and AI generation metadata from images.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

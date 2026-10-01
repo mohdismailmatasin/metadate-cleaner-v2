@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <cache-path name="cleaned_images" path="cleaned/" />
+    <external-cache-path name="external_cleaned_images" path="cleaned/" />
+    <files-path name="files_cleaned" path="cleaned/" />
+</paths>

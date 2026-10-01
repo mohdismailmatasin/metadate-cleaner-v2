@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  ai-metadatacleaner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aimc-sanitizer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - AIMC_PORT=8080
+      - AIMC_LOG_LEVEL=INFO
+    volumes:
+      - ./data/input:/app/storage/input:ro
+      - ./data/output:/app/storage/output:rw
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=100m
