@@ -27,12 +27,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.UploadFile
@@ -67,6 +69,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.aimetadatacleaner.R
@@ -101,6 +105,7 @@ fun HomeScreen(
     val cleanResult by viewModel.cleanResult.collectAsStateWithLifecycle()
     val activeReport by viewModel.activePrivacyReport.collectAsStateWithLifecycle()
     val batchUris by viewModel.batchUris.collectAsStateWithLifecycle()
+    var showWasmDialog by remember { mutableStateOf(false) }
 
     if (batchUris.isNotEmpty() && inspection == null) {
         BatchScreen(
@@ -358,6 +363,13 @@ fun HomeScreen(
             item {
                 CoreWorkflowCard()
             }
+
+            // 4. DIRECT WEBASSEMBLY (WASM) BROWSER ENGINE CARD (Zero-Install Client)
+            item {
+                DirectWasmEnginePromoCard(
+                    onOpenWasm = { showWasmDialog = true }
+                )
+            }
         }
 
         item {
@@ -390,6 +402,15 @@ fun HomeScreen(
             onShare = { viewModel.sharePrivacyReport(report) },
             onCopyFeedback = { viewModel.showToast(it) }
         )
+    }
+
+    if (showWasmDialog) {
+        Dialog(
+            onDismissRequest = { showWasmDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            WasmEngineScreen(onDismiss = { showWasmDialog = false })
+        }
     }
 }
 
@@ -654,6 +675,109 @@ private fun WorkflowStepRow(step: String, title: String) {
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+/**
+ * Direct WebAssembly (Wasm) Browser Engine Promo Card
+ */
+@Composable
+fun DirectWasmEnginePromoCard(
+    onOpenWasm: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("card_wasm_promo"),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, CyanAccent.copy(alpha = 0.35f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(CyanAccent.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Bolt,
+                        contentDescription = "Wasm",
+                        tint = CyanAccent,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Direct WebAssembly Engine",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .background(IndigoLight.copy(alpha = 0.15f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 5.dp, vertical = 1.dp)
+                        ) {
+                            Text(
+                                text = "ZERO-INSTALL",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = IndigoLight
+                            )
+                        }
+                    }
+                    Text(
+                        text = "Client processing support for any browser",
+                        fontSize = 11.sp,
+                        color = Slate400
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Run 100% offline metadata sanitization directly inside any browser (Chrome, Safari, Firefox, Edge) with zero install and zero data leaving client memory.",
+                fontSize = 12.sp,
+                color = Slate400,
+                lineHeight = 17.sp
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = onOpenWasm,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(42.dp)
+                    .testTag("btn_launch_wasm_sandbox"),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = CyanAccent,
+                    contentColor = Slate950
+                ),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.OpenInBrowser,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Launch Wasm Sandbox & Share Client",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
+            }
+        }
     }
 }
 

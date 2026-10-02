@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
@@ -37,8 +38,10 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Button
@@ -78,12 +81,16 @@ import com.example.aimetadatacleaner.ui.AppThemeMode
 import com.example.aimetadatacleaner.ui.MainViewModel
 import com.example.aimetadatacleaner.ui.theme.CyanAccent
 import com.example.aimetadatacleaner.ui.theme.IndigoAccent
+import com.example.aimetadatacleaner.ui.theme.Slate400
+import com.example.aimetadatacleaner.ui.theme.Slate950
+import com.example.aimetadatacleaner.util.WasmEngineTemplate
 
 @Composable
 fun SettingsScreen(viewModel: MainViewModel) {
     val context = LocalContext.current
     val currentThemeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     var showQrDialog by remember { mutableStateOf(false) }
+    var showWasmDialog by remember { mutableStateOf(false) }
 
     val developerEmail = "mohdismailmatasin@gmail.com"
     val copyrightNotice = "All Rights Reserved © Mohd Ismail Mat Asin (mohdismailmatasin@gmail.com) 2026"
@@ -289,6 +296,112 @@ fun SettingsScreen(viewModel: MainViewModel) {
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Contact", fontSize = 13.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // DIRECT WEBASSEMBLY (WASM) BROWSER ENGINE SECTION
+        item {
+            Text(
+                text = "Zero-Install WebAssembly Engine",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("card_settings_wasm"),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(18.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(CyanAccent.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Bolt,
+                                contentDescription = "Wasm",
+                                tint = CyanAccent,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Direct WebAssembly (Wasm) Engine",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Client processing support for any web browser",
+                                fontSize = 12.sp,
+                                color = Slate400
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Access the standalone, air-gapped WebAssembly engine that runs 100% offline in Chrome, Safari, Firefox, or Edge without any app installation.",
+                        fontSize = 13.sp,
+                        color = Slate400,
+                        lineHeight = 18.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = { showWasmDialog = true },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .testTag("btn_settings_open_wasm"),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CyanAccent,
+                                contentColor = Slate950
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.OpenInBrowser,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Open Sandbox", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        OutlinedButton(
+                            onClick = { WasmEngineTemplate.shareHtmlFile(context) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(44.dp)
+                                .testTag("btn_settings_share_wasm"),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Share WebApp", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -624,6 +737,15 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     }
                 }
             }
+        }
+    }
+
+    if (showWasmDialog) {
+        Dialog(
+            onDismissRequest = { showWasmDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            WasmEngineScreen(onDismiss = { showWasmDialog = false })
         }
     }
 }

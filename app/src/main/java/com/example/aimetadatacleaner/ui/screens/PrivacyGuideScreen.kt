@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LocationOff
@@ -260,6 +261,17 @@ fun PrivacyGuideScreen(
                 description = "All metadata inspection, EXIF stripping, and pixel re-encoding occur purely inside local phone memory. Your photos never leave your device and are never sent to external servers.",
                 icon = Icons.Default.Security,
                 accentColor = EmeraldSuccess
+            )
+        }
+
+        // 7. DIRECT WEBASSEMBLY (WASM) BROWSER ENGINE
+        item {
+            GuideSectionCard(
+                title = "Direct WebAssembly (Wasm) Engine",
+                subtitle = "Zero-Install Client Processing Support for Any Browser",
+                description = "For cross-device and desktop access, the Direct WebAssembly engine provides a 100% client-side, zero-install architecture. WebAssembly bytecode executes in browser linear memory (Chrome, Safari, Firefox, Edge) with strict Content-Security-Policy air-gapping, ensuring zero server uploads on any platform.",
+                icon = Icons.Default.Bolt,
+                accentColor = CyanAccent
             )
         }
 
