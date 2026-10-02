@@ -105,6 +105,18 @@ Unlike conventional metadata strippers that silently overwrite files or make unv
 - Strips embedded container user-data (`udta`) metadata atoms and ISO 6709 geolocation tags (`@xyz`) without re-encoding video or audio streams.
 - Zero generational quality loss — streams are extracted and remuxed losslessly in milliseconds.
 
+### 9. Expanded RAW Profile Sanitization (CR3, ARW, NEF, CR2, DNG)
+- **Deep Hardware Footprint Purge**: Professional camera RAW files store hardware serial numbers, lens IDs, shutter count, and precise GPS coordinates inside proprietary MakerNote structures.
+- **Canon RAW 3 (CR3)**: ISOBMFF container parsing purges Canon metadata UUID blocks (CMT1, CMT2, CMT3, CMT4 GPS) while preserving sensor raw Bayer payload.
+- **Sony ARW & Nikon NEF**: Traverses IFD0 and Exif SubIFD directories to strip GPS sub-IFDs, camera serials in MakerNotes, photographer/copyright tags, and XMP packets.
+- **Lossless Sensor Preservation**: Sensor geometry, CFA repeat patterns, black/white balance levels, and raw Bayer streams remain completely intact.
+
+### 10. Hardware-Bound Cryptographic Sanitization Proofs
+- **Secure Hardware Attestation**: Generates an asymmetric ECDSA P-256 keypair isolated inside the Android KeyStore (backed by TEE - Trusted Execution Environment or StrongBox Secure Element).
+- **Cryptographic Attestation Certificate**: Every sanitization links original SHA-256 and cleaned SHA-256 digests, timestamps, and verification audit results into a mathematically signed proof.
+- **Live Signature Verification**: In-app audit tool recalculates SHA-256 digests and verifies the ECDSA signature against the device's public key, confirming untampered provenance.
+- **Export Formats**: One-tap export to standardized JSON-LD attestation certificates and plain text audit reports.
+
 ---
 
 ## 📂 Supported Formats Matrix
@@ -113,7 +125,7 @@ Unlike conventional metadata strippers that silently overwrite files or make unv
 | :--- | :--- | :--- | :--- |
 | **Images** | `JPG`, `JPEG`, `PNG`, `WebP`, `HEIC`, `AVIF`, `TIFF` | **Supported** | Full scan, pixel reconstruction, metadata purge & secondary verification |
 | **Video** | `MP4`, `MOV` | **Supported** | Native lossless container remuxing, GPS geotag (@xyz) & UDTA metadata purge |
-| **RAW** | `DNG`, `CR2`, `CR3`, `NEF`, `ARW` | **Partially Supported** | Header extraction, EXIF inspection & DNG sanitization |
+| **RAW** | `CR3`, `ARW`, `NEF`, `CR2`, `DNG` | **Supported** | Deep profile sanitization: purges camera/lens serials in MakerNotes, GPS & XMP |
 | **Other Video** | `M4V`, `MKV`, `WebM` | **Scan Only** | Container metadata, GPS track & codec profile extraction |
 | **Documents** | `PDF`, `DOCX`, `XLSX`, `PPTX` | **Scan Only** | Creator, author, revision count, and modification dates |
 | **Audio** | `MP3`, `M4A`, `WAV` | **Scan Only** | ID3 tags, artist, album, and encoder software |
@@ -272,7 +284,7 @@ gradle :app:assembleDebug
 ```
 
 ### Test Coverage:
-- File signature & magic bytes validation (JPEG, PNG, WebP, PDF)
+- File signature & magic bytes validation (JPEG, PNG, WebP, PDF, RAW, MP4, MOV)
 - Malicious filename sanitization and path traversal prevention
 - Stable Diffusion Automatic1111 parameter extraction
 - Midjourney flags and prompt parsing
@@ -280,6 +292,8 @@ gradle :app:assembleDebug
 - Independent verification pass/fail audit
 - Verification detection of intentional residual XMP & AI chunks
 - Privacy inspection report text and JSON generation
+- Expanded camera RAW profile sanitization (CR3, ARW, NEF, CR2, DNG) & MakerNote purge verification
+- Hardware-bound cryptographic ECDSA P-256 signing, attestation validation, tampering rejection & JSON export
 
 ---
 
@@ -292,8 +306,8 @@ gradle :app:assembleDebug
 - [x] Batch processing with verification statistics directly on Clean tab
 - [x] Direct WebAssembly (Wasm) browser engine for zero-install client processing
 - [x] Lossless video stream remuxing for MP4/MOV container stripping
-- [ ] Expanded RAW profile sanitization (CR3, ARW, NEF)
-- [ ] Hardware-bound cryptographic signing of sanitization proofs
+- [x] Expanded RAW profile sanitization (CR3, ARW, NEF)
+- [x] Hardware-bound cryptographic signing of sanitization proofs
 
 ---
 

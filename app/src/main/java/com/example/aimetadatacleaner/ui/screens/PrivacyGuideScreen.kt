@@ -141,17 +141,17 @@ fun PrivacyGuideScreen(
                     HorizontalDivider(color = Slate800)
                     FormatCategoryRow(
                         title = "RAW Cameras",
-                        formats = "DNG • CR2 • CR3 • NEF • ARW",
-                        status = FormatSupportLevel.PARTIALLY_SUPPORTED,
-                        note = "Header scanning & DNG re-encoding.",
+                        formats = "CR3 • ARW • NEF • CR2 • DNG",
+                        status = FormatSupportLevel.SUPPORTED,
+                        note = "Expanded profile sanitization (purges GPS, camera/lens serials & MakerNotes).",
                         icon = Icons.Default.PhonelinkLock
                     )
                     HorizontalDivider(color = Slate800)
                     FormatCategoryRow(
                         title = "Video Media",
-                        formats = "MP4 • MOV • M4V • MKV • WebM",
-                        status = FormatSupportLevel.SCAN_ONLY,
-                        note = "Container & GPS inspection; stream remuxing in roadmap.",
+                        formats = "MP4 • MOV (Other: M4V • MKV • WebM)",
+                        status = FormatSupportLevel.SUPPORTED,
+                        note = "Lossless container remuxing (purges UDTA & GPS @xyz tags).",
                         icon = Icons.Default.VideoFile
                     )
                     HorizontalDivider(color = Slate800)
@@ -272,6 +272,28 @@ fun PrivacyGuideScreen(
                 description = "For cross-device and desktop access, the Direct WebAssembly engine provides a 100% client-side, zero-install architecture. WebAssembly bytecode executes in browser linear memory (Chrome, Safari, Firefox, Edge) with strict Content-Security-Policy air-gapping, ensuring zero server uploads on any platform.",
                 icon = Icons.Default.Bolt,
                 accentColor = CyanAccent
+            )
+        }
+
+        // 8. EXPANDED RAW PROFILE SANITIZATION
+        item {
+            GuideSectionCard(
+                title = "Expanded RAW Profile Sanitization",
+                subtitle = "Canon CR3/CR2, Sony ARW, Nikon NEF, Adobe DNG",
+                description = "Professional camera RAW files embed deep hardware fingerprints inside MakerNote blocks: camera serial numbers, lens IDs, shutter count, and precise GPS coordinates. Our RAW sanitization engine purges private hardware identifiers and geotags while preserving pristine sensor Bayer/CFA data.",
+                icon = Icons.Default.PhonelinkLock,
+                accentColor = IndigoLight
+            )
+        }
+
+        // 9. HARDWARE-BOUND CRYPTOGRAPHIC PROOFS
+        item {
+            GuideSectionCard(
+                title = "Hardware-Bound Cryptographic Signing",
+                subtitle = "Android KeyStore TEE / StrongBox ECDSA P-256 Attestation",
+                description = "Each sanitized file is sealed with an asymmetric digital signature generated inside the device's hardware-backed KeyStore. This cryptographic attestation links original SHA-256 and cleaned SHA-256 hashes, producing a tamper-proof certificate that verifies on-device sanitization.",
+                icon = Icons.Default.Security,
+                accentColor = EmeraldSuccess
             )
         }
 

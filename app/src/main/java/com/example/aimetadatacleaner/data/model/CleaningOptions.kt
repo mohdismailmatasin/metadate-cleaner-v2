@@ -37,5 +37,6 @@ data class CleanExecutionResult(
     val beforeAfterSummary: List<BeforeAfterItem> = emptyList(),
     val inspectionResult: ImageInspectionResult? = null,
     val privacyReport: PrivacyInspectionReport? = null,
+    val cryptographicProof: HardwareSignedProof? = null,
     val errorMessage: String? = null
 )

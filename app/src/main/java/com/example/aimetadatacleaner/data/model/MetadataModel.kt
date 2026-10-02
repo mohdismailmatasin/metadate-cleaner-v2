@@ -138,7 +138,8 @@ data class PrivacyInspectionReport(
     val isVerifiedClean: Boolean,
     val verificationChecks: List<VerificationCheck> = emptyList(),
     val beforeAfterSummary: List<BeforeAfterItem> = emptyList(),
-    val aiDetails: String? = null
+    val aiDetails: String? = null,
+    val cryptographicProof: HardwareSignedProof? = null
 ) {
     fun toFormattedText(): String {
         val sb = StringBuilder()
@@ -179,6 +180,14 @@ data class PrivacyInspectionReport(
             }
             sb.appendLine("------------------------------------------")
         }
+        if (cryptographicProof != null) {
+            sb.appendLine("HARDWARE CRYPTOGRAPHIC PROOF (ECDSA):")
+            sb.appendLine("  Proof ID:     ${cryptographicProof.proofId}")
+            sb.appendLine("  Security:     ${cryptographicProof.hardwareSecurityLevel}")
+            sb.appendLine("  Clean SHA256: ${cryptographicProof.cleanedSha256}")
+            sb.appendLine("  Signature:    ${cryptographicProof.signatureHex}")
+            sb.appendLine("------------------------------------------")
+        }
         sb.appendLine("PRIVACY NOTICE:")
         sb.appendLine("All processing was performed locally on-device.")
         sb.appendLine("No files or telemetry were transmitted over the network.")
@@ -190,6 +199,17 @@ data class PrivacyInspectionReport(
         val checksJson = verificationChecks.joinToString(",") {
             """{"category":"${it.category}","passed":${it.passed},"details":"${it.details.replace("\"", "\\\"")}"}"""
         }
+        val proofJson = cryptographicProof?.let {
+            """,
+          "cryptographic_proof": {
+            "proof_id": "${it.proofId}",
+            "hardware_level": "${it.hardwareSecurityLevel}",
+            "original_sha256": "${it.originalSha256}",
+            "cleaned_sha256": "${it.cleanedSha256}",
+            "signature_algorithm": "${it.signatureAlgorithm}",
+            "signature_hex": "${it.signatureHex}"
+          }"""
+        } ?: ""
         return """
         {
           "report_type": "PRIVACY_INSPECTION_REPORT",
@@ -211,7 +231,7 @@ data class PrivacyInspectionReport(
           "cleaning_status": "$cleaningStatus",
           "verification_status": "$verificationStatus",
           "is_verified_clean": $isVerifiedClean,
-          "verification_checks": [$checksJson]
+          "verification_checks": [$checksJson]$proofJson
         }
         """.trimIndent()
     }

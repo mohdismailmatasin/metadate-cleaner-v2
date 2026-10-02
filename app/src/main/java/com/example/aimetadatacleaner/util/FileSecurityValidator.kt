@@ -200,6 +200,18 @@ object FileSecurityValidator {
                         statusMessage = "AV1 Image File (AVIF) verified."
                     )
                 }
+                majorBrand.startsWith("crx") -> {
+                    FileValidationResult(
+                        isValid = true,
+                        detectedFormat = "Canon RAW 3 (CR3)",
+                        mimeType = "image/x-canon-cr3",
+                        fileCategory = FileCategory.RAW,
+                        supportLevel = FormatSupportLevel.SUPPORTED,
+                        fileSizeBytes = fileSizeBytes,
+                        sanitizedFileName = fileName,
+                        statusMessage = "Canon RAW 3 (CR3) supported for profile sanitization and metadata purge."
+                    )
+                }
                 majorBrand.startsWith("isom") || majorBrand.startsWith("mp4") || majorBrand.startsWith("M4V") -> {
                     FileValidationResult(
                         isValid = true,
@@ -239,20 +251,35 @@ object FileSecurityValidator {
             }
         }
 
-        // 5. TIFF / DNG / CR2
+        // 5. TIFF / DNG / CR2 / ARW / NEF
         if (length >= 4 && (startsWith(bytes, TIFF_LE_MAGIC) || startsWith(bytes, TIFF_BE_MAGIC))) {
             val isDng = ext == "dng"
             val isCr2 = ext == "cr2" || (length >= 10 && bytes[8] == 'C'.code.toByte() && bytes[9] == 'R'.code.toByte())
-            val name = if (isCr2) "Canon RAW (CR2)" else if (isDng) "Adobe Digital Negative (DNG)" else "TIFF Image"
+            val isArw = ext == "arw"
+            val isNef = ext == "nef"
+            val name = when {
+                isCr2 -> "Canon RAW (CR2)"
+                isDng -> "Adobe Digital Negative (DNG)"
+                isArw -> "Sony Alpha RAW (ARW)"
+                isNef -> "Nikon RAW (NEF)"
+                else -> "TIFF Image"
+            }
+            val mime = when {
+                isDng -> "image/x-adobe-dng"
+                isCr2 -> "image/x-canon-cr2"
+                isArw -> "image/x-sony-arw"
+                isNef -> "image/x-nikon-nef"
+                else -> "image/tiff"
+            }
             return FileValidationResult(
                 isValid = true,
                 detectedFormat = name,
-                mimeType = if (isDng || isCr2) "image/x-adobe-dng" else "image/tiff",
-                fileCategory = if (isDng || isCr2) FileCategory.RAW else FileCategory.IMAGE,
-                supportLevel = if (isDng) FormatSupportLevel.PARTIALLY_SUPPORTED else FormatSupportLevel.SUPPORTED,
+                mimeType = mime,
+                fileCategory = if (isDng || isCr2 || isArw || isNef) FileCategory.RAW else FileCategory.IMAGE,
+                supportLevel = FormatSupportLevel.SUPPORTED,
                 fileSizeBytes = fileSizeBytes,
                 sanitizedFileName = fileName,
-                statusMessage = "TIFF/RAW structure signature verified."
+                statusMessage = "$name supported for expanded RAW profile sanitization."
             )
         }
 
@@ -314,13 +341,63 @@ object FileSecurityValidator {
             )
             "mp4", "mov", "m4v" -> FileValidationResult(
                 isValid = true,
-                detectedFormat = "Video File",
-                mimeType = "video/mp4",
+                detectedFormat = if (ext == "mov") "QuickTime Video (MOV)" else "MP4 Video",
+                mimeType = if (ext == "mov") "video/quicktime" else "video/mp4",
                 fileCategory = FileCategory.VIDEO,
-                supportLevel = FormatSupportLevel.SCAN_ONLY,
+                supportLevel = FormatSupportLevel.SUPPORTED,
                 fileSizeBytes = fileSizeBytes,
                 sanitizedFileName = fileName,
-                statusMessage = "Video media file."
+                statusMessage = "Video media file supported for lossless container sanitization."
+            )
+            "cr3" -> FileValidationResult(
+                isValid = true,
+                detectedFormat = "Canon RAW 3 (CR3)",
+                mimeType = "image/x-canon-cr3",
+                fileCategory = FileCategory.RAW,
+                supportLevel = FormatSupportLevel.SUPPORTED,
+                fileSizeBytes = fileSizeBytes,
+                sanitizedFileName = fileName,
+                statusMessage = "Canon RAW 3 (CR3) supported for expanded profile sanitization."
+            )
+            "arw" -> FileValidationResult(
+                isValid = true,
+                detectedFormat = "Sony Alpha RAW (ARW)",
+                mimeType = "image/x-sony-arw",
+                fileCategory = FileCategory.RAW,
+                supportLevel = FormatSupportLevel.SUPPORTED,
+                fileSizeBytes = fileSizeBytes,
+                sanitizedFileName = fileName,
+                statusMessage = "Sony Alpha RAW (ARW) supported for expanded profile sanitization."
+            )
+            "nef" -> FileValidationResult(
+                isValid = true,
+                detectedFormat = "Nikon RAW (NEF)",
+                mimeType = "image/x-nikon-nef",
+                fileCategory = FileCategory.RAW,
+                supportLevel = FormatSupportLevel.SUPPORTED,
+                fileSizeBytes = fileSizeBytes,
+                sanitizedFileName = fileName,
+                statusMessage = "Nikon RAW (NEF) supported for expanded profile sanitization."
+            )
+            "cr2" -> FileValidationResult(
+                isValid = true,
+                detectedFormat = "Canon RAW (CR2)",
+                mimeType = "image/x-canon-cr2",
+                fileCategory = FileCategory.RAW,
+                supportLevel = FormatSupportLevel.SUPPORTED,
+                fileSizeBytes = fileSizeBytes,
+                sanitizedFileName = fileName,
+                statusMessage = "Canon RAW (CR2) supported for expanded profile sanitization."
+            )
+            "dng" -> FileValidationResult(
+                isValid = true,
+                detectedFormat = "Adobe Digital Negative (DNG)",
+                mimeType = "image/x-adobe-dng",
+                fileCategory = FileCategory.RAW,
+                supportLevel = FormatSupportLevel.SUPPORTED,
+                fileSizeBytes = fileSizeBytes,
+                sanitizedFileName = fileName,
+                statusMessage = "Adobe Digital Negative (DNG) supported for expanded profile sanitization."
             )
             "docx", "xlsx", "pptx" -> FileValidationResult(
                 isValid = true,

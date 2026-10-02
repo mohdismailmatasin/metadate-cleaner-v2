@@ -1,6 +1,7 @@
 package com.example.aimetadatacleaner.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.VerifiedUser
@@ -57,6 +59,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.example.aimetadatacleaner.data.model.BeforeAfterItem
 import com.example.aimetadatacleaner.data.model.CleanExecutionResult
 import com.example.aimetadatacleaner.data.model.RemovalStatus
+import com.example.aimetadatacleaner.ui.components.HardwareProofDialog
 import com.example.aimetadatacleaner.ui.theme.AmberWarning
 import com.example.aimetadatacleaner.ui.theme.CyanAccent
 import com.example.aimetadatacleaner.ui.theme.EmeraldSuccess
@@ -76,6 +79,7 @@ fun CleanResultDialog(
 ) {
     var showRemainingData by remember { mutableStateOf(false) }
     var showBeforeAfter by remember { mutableStateOf(true) }
+    var showProofDialog by remember { mutableStateOf(false) }
 
     val verification = result.verificationReport
     val isVerified = result.isVerifiedClean && (verification?.isVerifiedClean == true)
@@ -226,6 +230,82 @@ fun CleanResultDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
+                // Hardware-Bound Cryptographic Proof Card
+                result.cryptographicProof?.let { proof ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showProofDialog = true }
+                            .testTag("card_crypto_proof_badge"),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (proof.isHardwareBacked) EmeraldSuccess.copy(alpha = 0.12f) else CyanAccent.copy(alpha = 0.12f)
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            if (proof.isHardwareBacked) EmeraldSuccess.copy(alpha = 0.4f) else CyanAccent.copy(alpha = 0.4f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(if (proof.isHardwareBacked) EmeraldSuccess.copy(alpha = 0.2f) else CyanAccent.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Security,
+                                    contentDescription = null,
+                                    tint = if (proof.isHardwareBacked) EmeraldSuccess else CyanAccent,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Hardware-Bound Proof",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .background(if (proof.isHardwareBacked) EmeraldSuccess.copy(alpha = 0.2f) else CyanAccent.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
+                                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                                    ) {
+                                        Text(
+                                            text = if (proof.isHardwareBacked) "TEE SEALED" else "ECDSA",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = if (proof.isHardwareBacked) EmeraldSuccess else CyanAccent
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "Signed by device KeyStore (${proof.proofId}) • Tap to inspect",
+                                    fontSize = 11.sp,
+                                    color = Slate400
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.VerifiedUser,
+                                contentDescription = "View Certificate",
+                                tint = if (proof.isHardwareBacked) EmeraldSuccess else CyanAccent,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
                 // BEFORE / AFTER COMPARISON SECTION (Section 7)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -360,6 +440,13 @@ fun CleanResultDialog(
                 }
             }
         }
+    }
+
+    if (showProofDialog && result.cryptographicProof != null) {
+        HardwareProofDialog(
+            proof = result.cryptographicProof,
+            onDismiss = { showProofDialog = false }
+        )
     }
 }
 

@@ -471,6 +471,18 @@ object MetadataExtractor {
                 )
             )
         }
+        exif.getAttribute(ExifInterface.TAG_BODY_SERIAL_NUMBER)?.let {
+            list.add(
+                MetadataEntry(
+                    standard = MetadataStandard.EXIF,
+                    category = MetadataCategory.CAMERA_DEVICE,
+                    key = "Camera Body Serial Number",
+                    value = it,
+                    isSensitive = true,
+                    description = "Unique hardware serial number (cross-shoot fingerprinting risk)"
+                )
+            )
+        }
         exif.getAttribute(ExifInterface.TAG_LENS_MODEL)?.let {
             list.add(
                 MetadataEntry(
@@ -478,6 +490,42 @@ object MetadataExtractor {
                     category = MetadataCategory.CAMERA_DEVICE,
                     key = "Lens Model",
                     value = it
+                )
+            )
+        }
+        exif.getAttribute(ExifInterface.TAG_LENS_SERIAL_NUMBER)?.let {
+            list.add(
+                MetadataEntry(
+                    standard = MetadataStandard.EXIF,
+                    category = MetadataCategory.CAMERA_DEVICE,
+                    key = "Lens Serial Number",
+                    value = it,
+                    isSensitive = true,
+                    description = "Optical lens hardware serial number"
+                )
+            )
+        }
+        exif.getAttribute(ExifInterface.TAG_CAMERA_OWNER_NAME)?.let {
+            list.add(
+                MetadataEntry(
+                    standard = MetadataStandard.EXIF,
+                    category = MetadataCategory.AUTHOR_SYSTEM,
+                    key = "Camera Owner Name",
+                    value = it,
+                    isSensitive = true,
+                    description = "Registered hardware owner identifier"
+                )
+            )
+        }
+        exif.getAttribute(ExifInterface.TAG_MAKER_NOTE)?.let {
+            list.add(
+                MetadataEntry(
+                    standard = MetadataStandard.EXIF,
+                    category = MetadataCategory.CAMERA_DEVICE,
+                    key = "Camera MakerNote",
+                    value = "Proprietary camera manufacturer binary records",
+                    isSensitive = true,
+                    description = "Contains private camera diagnostic logs, shutter count, and calibration data"
                 )
             )
         }

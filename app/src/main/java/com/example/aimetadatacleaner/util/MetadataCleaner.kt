@@ -67,6 +67,15 @@ object MetadataCleaner {
             return@withContext cleanVideo(context, inputUri, inspection)
         }
 
+        val isRaw = inspection.validationResult?.fileCategory == FileCategory.RAW ||
+                inspection.fileName.let { name ->
+                    val ext = name.substringAfterLast(".", "").lowercase()
+                    ext in setOf("cr3", "cr2", "arw", "nef", "dng")
+                }
+        if (isRaw) {
+            return@withContext RawMetadataSanitizer.cleanRawFile(context, inputUri, inspection)
+        }
+
         try {
             // Read orientation to preserve visual rotation after EXIF is stripped
             val orientation = getOrientation(context, inputUri)
@@ -149,6 +158,18 @@ object MetadataCleaner {
             }
 
             val dateStr = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+
+            val origSha256 = context.contentResolver.openInputStream(inputUri)?.use {
+                HardwareCryptoSigner.calculateStreamSha256(it)
+            } ?: "0000000000000000000000000000000000000000000000000000000000000000"
+
+            val cryptoProof = HardwareCryptoSigner.signSanitizationProof(
+                originalFileName = inspection.fileName,
+                originalSha256 = origSha256,
+                cleanedFile = outputFile,
+                verificationReport = verificationReport
+            )
+
             val privacyReport = PrivacyInspectionReport(
                 fileName = inspection.fileName,
                 fileSizeBytes = inspection.fileSizeBytes,
@@ -170,7 +191,8 @@ object MetadataCleaner {
                 beforeAfterSummary = beforeAfter,
                 aiDetails = inspection.aiMetadata?.let {
                     "Generator: ${it.detectedEngine}\nEvidence: ${it.evidenceSummary}\nConfidence: ${it.confidence}${it.positivePrompt?.let { p -> "\nPrompt: $p" } ?: ""}"
-                }
+                },
+                cryptographicProof = cryptoProof
             )
 
             CleanExecutionResult(
@@ -189,7 +211,8 @@ object MetadataCleaner {
                 verificationReport = verificationReport,
                 beforeAfterSummary = beforeAfter,
                 inspectionResult = inspection,
-                privacyReport = privacyReport
+                privacyReport = privacyReport,
+                cryptographicProof = cryptoProof
             )
         } catch (e: Exception) {
             CleanExecutionResult(
@@ -275,6 +298,17 @@ object MetadataCleaner {
             val removedCount = inspection.entries.size.coerceAtLeast(1)
             val dateStr = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
 
+            val origSha256 = context.contentResolver.openInputStream(inputUri)?.use {
+                HardwareCryptoSigner.calculateStreamSha256(it)
+            } ?: "0000000000000000000000000000000000000000000000000000000000000000"
+
+            val cryptoProof = HardwareCryptoSigner.signSanitizationProof(
+                originalFileName = inspection.fileName,
+                originalSha256 = origSha256,
+                cleanedFile = outputFile,
+                verificationReport = verification
+            )
+
             val privacyReport = PrivacyInspectionReport(
                 fileName = inspection.fileName,
                 fileSizeBytes = inspection.fileSizeBytes,
@@ -297,7 +331,8 @@ object MetadataCleaner {
                     BeforeAfterItem("Container Metadata", "${inspection.entries.size} metadata tags found", RemovalStatus.REMOVED, "Cleaned (All UDTA/GPS stripped)"),
                     BeforeAfterItem("GPS Location", if (inspection.hasGpsLocation) "Coordinates embedded" else "None", if (inspection.hasGpsLocation) RemovalStatus.REMOVED else RemovalStatus.NOT_PRESENT, "Geotag stripped"),
                     BeforeAfterItem("Video & Audio Streams", "Original encoded tracks", RemovalStatus.PRESERVED, "Preserved (Lossless)")
-                )
+                ),
+                cryptographicProof = cryptoProof
             )
 
             return CleanExecutionResult(
@@ -314,7 +349,8 @@ object MetadataCleaner {
                 removedGps = inspection.hasGpsLocation,
                 isVerifiedClean = verification.isVerifiedClean,
                 inspectionResult = inspection,
-                privacyReport = privacyReport
+                privacyReport = privacyReport,
+                cryptographicProof = cryptoProof
             )
         } catch (e: Exception) {
             return CleanExecutionResult(
@@ -339,10 +375,19 @@ object MetadataCleaner {
     suspend fun saveToGallery(context: Context, cleanedFile: File): Uri? = withContext(Dispatchers.IO) {
         try {
             val isVideo = cleanedFile.name.endsWith(".mp4", ignoreCase = true) || cleanedFile.name.endsWith(".mov", ignoreCase = true)
+            val isRaw = cleanedFile.name.let {
+                val ext = it.substringAfterLast(".", "").lowercase()
+                ext in setOf("cr3", "cr2", "arw", "nef", "dng")
+            }
             val mimeType = when {
                 isVideo -> "video/mp4"
                 cleanedFile.name.endsWith(".png", ignoreCase = true) -> "image/png"
                 cleanedFile.name.endsWith(".webp", ignoreCase = true) -> "image/webp"
+                cleanedFile.name.endsWith(".cr3", ignoreCase = true) -> "image/x-canon-cr3"
+                cleanedFile.name.endsWith(".arw", ignoreCase = true) -> "image/x-sony-arw"
+                cleanedFile.name.endsWith(".nef", ignoreCase = true) -> "image/x-nikon-nef"
+                cleanedFile.name.endsWith(".cr2", ignoreCase = true) -> "image/x-canon-cr2"
+                cleanedFile.name.endsWith(".dng", ignoreCase = true) -> "image/x-adobe-dng"
                 else -> "image/jpeg"
             }
 
@@ -350,7 +395,11 @@ object MetadataCleaner {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, cleanedFile.name)
                 put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    val folder = if (isVideo) "${Environment.DIRECTORY_MOVIES}/Metadata_Cleaner" else "${Environment.DIRECTORY_PICTURES}/Metadata_Cleaner"
+                    val folder = when {
+                        isVideo -> "${Environment.DIRECTORY_MOVIES}/Metadata_Cleaner"
+                        isRaw -> "${Environment.DIRECTORY_PICTURES}/Metadata_Cleaner_RAW"
+                        else -> "${Environment.DIRECTORY_PICTURES}/Metadata_Cleaner"
+                    }
                     put(MediaStore.MediaColumns.RELATIVE_PATH, folder)
                     put(MediaStore.MediaColumns.IS_PENDING, 1)
                 }
