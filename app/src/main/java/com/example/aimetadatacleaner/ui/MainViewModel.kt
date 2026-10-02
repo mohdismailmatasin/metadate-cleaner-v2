@@ -105,6 +105,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
 
     fun selectImage(uri: Uri) {
+        _batchUris.value = emptyList()
+        _batchInspections.value = emptyList()
+        _batchState.value = BatchProgressState()
         _selectedUri.value = uri
         _cleanResult.value = null
         inspectCurrentUri(uri)
@@ -114,6 +117,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _selectedUri.value = null
         _inspectionResult.value = null
         _cleanResult.value = null
+    }
+
+    fun clearBatch() {
+        _batchUris.value = emptyList()
+        _batchInspections.value = emptyList()
+        _batchState.value = BatchProgressState()
     }
 
     private fun inspectCurrentUri(uri: Uri) {
@@ -165,7 +174,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val savedUri = repository.saveToGallery(filePath)
             if (savedUri != null) {
-                _toastMessage.value = "Saved to Pictures/AI_Metadata_Cleaner in Gallery!"
+                _toastMessage.value = "Saved to Pictures/Metadata_Cleaner in Gallery!"
             } else {
                 _toastMessage.value = "Could not save to gallery."
             }
@@ -190,6 +199,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setBatchUris(uris: List<Uri>) {
+        _selectedUri.value = null
+        _inspectionResult.value = null
+        _cleanResult.value = null
         _batchUris.value = uris
         _batchState.value = BatchProgressState(total = uris.size)
         _batchInspections.value = uris.map { BatchItemInspection(uri = it, isInspecting = true) }

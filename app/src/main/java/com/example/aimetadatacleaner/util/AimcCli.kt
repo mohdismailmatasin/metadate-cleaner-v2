@@ -80,7 +80,7 @@ object AimcCli {
 
     fun formatCliOutput(scanResult: CliScanResult): String {
         return buildString {
-            appendLine("AI Metadata Cleaner (aimc)")
+            appendLine("Metadata Cleaner (aimc)")
             appendLine("Scanning: ${scanResult.fileName} [${scanResult.detectedFormat}]")
             appendLine("----------------------------------------")
             appendLine("GPS:            ${if (scanResult.gpsFound) "FOUND [⚠ High Privacy Exposure]" else "NOT FOUND [✓]"}")

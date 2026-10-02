@@ -144,7 +144,7 @@ data class PrivacyInspectionReport(
         val sb = StringBuilder()
         sb.appendLine("==========================================")
         sb.appendLine("       PRIVACY INSPECTION REPORT")
-        sb.appendLine("       AI Metadata Cleaner & Sanitizer")
+        sb.appendLine("       Metadata Cleaner & Sanitizer")
         sb.appendLine("==========================================")
         sb.appendLine("File:           $fileName")
         sb.appendLine("Size:           ${fileSizeBytes / 1024} KB")

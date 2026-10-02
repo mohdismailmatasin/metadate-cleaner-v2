@@ -86,7 +86,8 @@ import com.example.aimetadatacleaner.ui.theme.Slate950
 @Composable
 fun BatchScreen(
     viewModel: MainViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClearBatch: (() -> Unit)? = null
 ) {
     val batchUris by viewModel.batchUris.collectAsStateWithLifecycle()
     val batchState by viewModel.batchState.collectAsStateWithLifecycle()
@@ -153,32 +154,51 @@ fun BatchScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Button(
-                        onClick = {
-                            multiPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .testTag("select_batch_photos_button"),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = CyanAccent,
-                            contentColor = Slate950
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AddPhotoAlternate,
-                            contentDescription = "Pick Photos",
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (batchUris.isEmpty()) "Select Files for Batch" else "Reselect Files (${batchUris.size} loaded)",
-                            fontWeight = FontWeight.Bold
-                        )
+                        Button(
+                            onClick = {
+                                multiPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+                                )
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .testTag("select_batch_photos_button"),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CyanAccent,
+                                contentColor = Slate950
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddPhotoAlternate,
+                                contentDescription = "Pick Files",
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (batchUris.isEmpty()) "Select Files for Batch" else "Reselect Files (${batchUris.size})",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
+
+                        if (batchUris.isNotEmpty() && onClearBatch != null) {
+                            OutlinedButton(
+                                onClick = onClearBatch,
+                                modifier = Modifier
+                                    .height(48.dp)
+                                    .testTag("clear_batch_button"),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                            ) {
+                                Text("Clear", fontSize = 13.sp)
+                            }
+                        }
                     }
                 }
             }

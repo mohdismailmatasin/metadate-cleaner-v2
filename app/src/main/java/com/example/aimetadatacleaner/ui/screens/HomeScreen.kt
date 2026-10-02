@@ -100,6 +100,16 @@ fun HomeScreen(
     val options by viewModel.cleaningOptions.collectAsStateWithLifecycle()
     val cleanResult by viewModel.cleanResult.collectAsStateWithLifecycle()
     val activeReport by viewModel.activePrivacyReport.collectAsStateWithLifecycle()
+    val batchUris by viewModel.batchUris.collectAsStateWithLifecycle()
+
+    if (batchUris.isNotEmpty() && inspection == null) {
+        BatchScreen(
+            viewModel = viewModel,
+            modifier = modifier,
+            onClearBatch = { viewModel.clearBatch() }
+        )
+        return
+    }
 
     val singlePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -181,7 +191,7 @@ fun HomeScreen(
                     inspection = inspection!!,
                     onChangeFile = {
                         singlePickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
                         )
                     },
                     onClear = { viewModel.clearSelection() }
@@ -333,12 +343,12 @@ fun HomeScreen(
                 ModernDropzoneUploadArea(
                     onChooseSingle = {
                         singlePickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
                         )
                     },
                     onChooseMultiple = {
                         multiPickerLauncher.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
                         )
                     }
                 )
@@ -434,29 +444,22 @@ fun MainBrandHeader() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = "AI Metadata Cleaner",
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 20.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "Inspect. Clean. Verify. Protect your privacy.",
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium
+                fontSize = 15.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
                 text = "🔒 Your files are processed locally on your device. Zero cloud uploads, zero telemetry.",
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 color = Slate400,
-                lineHeight = 15.sp
+                lineHeight = 16.sp
             )
         }
     }
@@ -514,7 +517,7 @@ fun ModernDropzoneUploadArea(
             Spacer(modifier = Modifier.height(4.dp))
 
             Text(
-                text = "or select from your photo library",
+                text = "or select from your photo & video library",
                 fontSize = 13.sp,
                 color = Slate400
             )

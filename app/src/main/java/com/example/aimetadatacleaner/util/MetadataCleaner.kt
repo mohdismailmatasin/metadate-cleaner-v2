@@ -6,21 +6,29 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.media.MediaCodec
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMuxer
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
+import com.example.aimetadatacleaner.data.model.BeforeAfterItem
 import com.example.aimetadatacleaner.data.model.CleanExecutionResult
 import com.example.aimetadatacleaner.data.model.CleaningOptions
+import com.example.aimetadatacleaner.data.model.ImageInspectionResult
 import com.example.aimetadatacleaner.data.model.OutputFormat
 import com.example.aimetadatacleaner.data.model.PrivacyInspectionReport
+import com.example.aimetadatacleaner.data.model.RemovalStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -50,8 +58,13 @@ object MetadataCleaner {
                 removedGps = false,
                 isVerifiedClean = false,
                 inspectionResult = inspection,
-                errorMessage = "This format is not supported for automated image pixel sanitization: ${inspection.validationResult.statusMessage}"
+                errorMessage = "This format is not supported for automated pixel sanitization: ${inspection.validationResult.statusMessage}"
             )
+        }
+
+        val isVideo = inspection.validationResult?.fileCategory == FileCategory.VIDEO || inspection.mimeType.startsWith("video/")
+        if (isVideo) {
+            return@withContext cleanVideo(context, inputUri, inspection)
         }
 
         try {
@@ -198,25 +211,159 @@ object MetadataCleaner {
         }
     }
 
+    private fun cleanVideo(
+        context: Context,
+        inputUri: Uri,
+        inspection: ImageInspectionResult
+    ): CleanExecutionResult {
+        try {
+            val cacheDir = File(context.cacheDir, "cleaned_videos").apply { mkdirs() }
+            val baseName = inspection.fileName.substringBeforeLast(".")
+            val sanitizedBase = baseName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+            val outputFile = File(cacheDir, "${sanitizedBase}_cleaned.mp4")
+            if (outputFile.exists()) outputFile.delete()
+
+            var extractor: MediaExtractor? = null
+            var muxer: MediaMuxer? = null
+
+            try {
+                extractor = MediaExtractor()
+                extractor.setDataSource(context, inputUri, null)
+                muxer = MediaMuxer(outputFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+
+                val trackMap = mutableMapOf<Int, Int>()
+                val trackCount = extractor.trackCount
+                for (i in 0 until trackCount) {
+                    val format = extractor.getTrackFormat(i)
+                    val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
+                    if (mime.startsWith("video/") || mime.startsWith("audio/")) {
+                        extractor.selectTrack(i)
+                        trackMap[i] = muxer.addTrack(format)
+                    }
+                }
+
+                muxer.start()
+                val buffer = ByteBuffer.allocate(1024 * 1024)
+                val bufferInfo = MediaCodec.BufferInfo()
+
+                while (true) {
+                    bufferInfo.offset = 0
+                    bufferInfo.size = extractor.readSampleData(buffer, 0)
+                    if (bufferInfo.size < 0) break
+
+                    bufferInfo.presentationTimeUs = extractor.sampleTime
+                    bufferInfo.flags = extractor.sampleFlags
+                    val trackIndex = extractor.sampleTrackIndex
+                    val muxerTrack = trackMap[trackIndex]
+                    if (muxerTrack != null) {
+                        muxer.writeSampleData(muxerTrack, buffer, bufferInfo)
+                    }
+                    extractor.advance()
+                }
+
+                muxer.stop()
+            } finally {
+                try { muxer?.release() } catch (_: Exception) {}
+                try { extractor?.release() } catch (_: Exception) {}
+            }
+
+            val cleanedSizeBytes = outputFile.length()
+            val cleanedUri = Uri.fromFile(outputFile)
+
+            // Independent verification of video output
+            val verification = MetadataVerifier.verifyCleanFile(outputFile, inspection)
+            val removedCount = inspection.entries.size.coerceAtLeast(1)
+            val dateStr = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+
+            val privacyReport = PrivacyInspectionReport(
+                fileName = inspection.fileName,
+                fileSizeBytes = inspection.fileSizeBytes,
+                mimeType = "video/mp4",
+                generatedDate = dateStr,
+                privacyExposure = inspection.riskLevel,
+                detectedExif = inspection.entries.any { it.standard.name == "EXIF" },
+                detectedGps = inspection.hasGpsLocation,
+                detectedXmp = inspection.entries.any { it.standard.name == "XMP" },
+                detectedIptc = inspection.entries.any { it.standard.name == "IPTC" },
+                detectedAiMetadata = inspection.hasAiMetadata,
+                detectedC2pa = inspection.hasC2pa,
+                sensitiveFieldsCount = inspection.entries.count { it.isSensitive },
+                totalFieldsFound = inspection.entries.size,
+                cleaningStatus = "Cleaned (Lossless Muxer Sanitization)",
+                verificationStatus = verification.statusText,
+                isVerifiedClean = verification.isVerifiedClean,
+                verificationChecks = verification.checkedCategories,
+                beforeAfterSummary = listOf(
+                    BeforeAfterItem("Container Metadata", "${inspection.entries.size} metadata tags found", RemovalStatus.REMOVED, "Cleaned (All UDTA/GPS stripped)"),
+                    BeforeAfterItem("GPS Location", if (inspection.hasGpsLocation) "Coordinates embedded" else "None", if (inspection.hasGpsLocation) RemovalStatus.REMOVED else RemovalStatus.NOT_PRESENT, "Geotag stripped"),
+                    BeforeAfterItem("Video & Audio Streams", "Original encoded tracks", RemovalStatus.PRESERVED, "Preserved (Lossless)")
+                )
+            )
+
+            return CleanExecutionResult(
+                success = true,
+                originalUri = inputUri,
+                cleanedUri = cleanedUri,
+                cleanedFilePath = outputFile.absolutePath,
+                originalFileName = inspection.fileName,
+                cleanedFileName = outputFile.name,
+                originalSizeBytes = inspection.fileSizeBytes,
+                cleanedSizeBytes = cleanedSizeBytes,
+                tagsRemovedCount = removedCount,
+                removedAiTags = inspection.hasAiMetadata,
+                removedGps = inspection.hasGpsLocation,
+                isVerifiedClean = verification.isVerifiedClean,
+                inspectionResult = inspection,
+                privacyReport = privacyReport
+            )
+        } catch (e: Exception) {
+            return CleanExecutionResult(
+                success = false,
+                originalUri = inputUri,
+                cleanedUri = null,
+                cleanedFilePath = null,
+                originalFileName = inspection.fileName,
+                cleanedFileName = "",
+                originalSizeBytes = inspection.fileSizeBytes,
+                cleanedSizeBytes = 0,
+                tagsRemovedCount = 0,
+                removedAiTags = false,
+                removedGps = false,
+                isVerifiedClean = false,
+                inspectionResult = inspection,
+                errorMessage = "Failed to sanitize video: ${e.message ?: "Unknown codec error"}. Your original video was untouched."
+            )
+        }
+    }
+
     suspend fun saveToGallery(context: Context, cleanedFile: File): Uri? = withContext(Dispatchers.IO) {
         try {
+            val isVideo = cleanedFile.name.endsWith(".mp4", ignoreCase = true) || cleanedFile.name.endsWith(".mov", ignoreCase = true)
             val mimeType = when {
+                isVideo -> "video/mp4"
                 cleanedFile.name.endsWith(".png", ignoreCase = true) -> "image/png"
                 cleanedFile.name.endsWith(".webp", ignoreCase = true) -> "image/webp"
                 else -> "image/jpeg"
             }
 
             val contentValues = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, cleanedFile.name)
-                put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+                put(MediaStore.MediaColumns.DISPLAY_NAME, cleanedFile.name)
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/AI_Metadata_Cleaner")
-                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                    val folder = if (isVideo) "${Environment.DIRECTORY_MOVIES}/Metadata_Cleaner" else "${Environment.DIRECTORY_PICTURES}/Metadata_Cleaner"
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, folder)
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
                 }
             }
 
+            val targetCollection = if (isVideo) {
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            } else {
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            }
+
             val resolver = context.contentResolver
-            val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            val uri = resolver.insert(targetCollection, contentValues)
                 ?: return@withContext null
 
             resolver.openOutputStream(uri)?.use { out ->
@@ -227,7 +374,7 @@ object MetadataCleaner {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 contentValues.clear()
-                contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
                 resolver.update(uri, contentValues, null, null)
             }
 

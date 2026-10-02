@@ -1,4 +1,4 @@
-# AI Metadata Cleaner
+# Metadata Cleaner
 
 > **Inspect, remove, and verify metadata and AI-generation evidence from your files — with privacy-first processing.**
 
@@ -7,13 +7,13 @@
 [![Verification](https://img.shields.io/badge/Verification-Independent%20Audit-emerald.svg)](https://github.com)
 [![License](https://img.shields.io/badge/License-Apache%202.0-lightgrey.svg)](LICENSE)
 
-**AI Metadata Cleaner (aimc)** is a professional, privacy-focused security utility engineered to discover, explain, sanitize, and independently verify hidden metadata, geotags, and generative AI parameter footprints in images and multimedia files.
+**Metadata Cleaner (aimc)** is a professional, privacy-focused security utility engineered to discover, explain, sanitize, and independently verify hidden metadata, geotags, and generative AI parameter footprints in images and multimedia files.
 
 ---
 
 ## 🧭 Core Workflow: Scan → Explain → Clean → Verify
 
-Unlike conventional metadata strippers that silently overwrite files or make unverified claims, AI Metadata Cleaner operates on a transparent four-phase privacy pipeline:
+Unlike conventional metadata strippers that silently overwrite files or make unverified claims, Metadata Cleaner operates on a transparent four-phase privacy pipeline:
 
 ```text
        ┌───────────────────────────┐

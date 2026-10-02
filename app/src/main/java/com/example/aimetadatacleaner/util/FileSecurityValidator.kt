@@ -203,25 +203,25 @@ object FileSecurityValidator {
                 majorBrand.startsWith("isom") || majorBrand.startsWith("mp4") || majorBrand.startsWith("M4V") -> {
                     FileValidationResult(
                         isValid = true,
-                        detectedFormat = "MP4 Video Container",
+                        detectedFormat = "MP4 Video",
                         mimeType = "video/mp4",
                         fileCategory = FileCategory.VIDEO,
-                        supportLevel = FormatSupportLevel.SCAN_ONLY,
+                        supportLevel = FormatSupportLevel.SUPPORTED,
                         fileSizeBytes = fileSizeBytes,
                         sanitizedFileName = fileName,
-                        statusMessage = "MP4 container detected. Inspection supported; video sanitization requires specialized codec pipeline."
+                        statusMessage = "MP4 video supported for metadata inspection and container sanitization."
                     )
                 }
                 majorBrand.startsWith("qt  ") -> {
                     FileValidationResult(
                         isValid = true,
-                        detectedFormat = "QuickTime (MOV)",
+                        detectedFormat = "QuickTime Video (MOV)",
                         mimeType = "video/quicktime",
                         fileCategory = FileCategory.VIDEO,
-                        supportLevel = FormatSupportLevel.SCAN_ONLY,
+                        supportLevel = FormatSupportLevel.SUPPORTED,
                         fileSizeBytes = fileSizeBytes,
                         sanitizedFileName = fileName,
-                        statusMessage = "QuickTime MOV container detected. Inspection supported."
+                        statusMessage = "QuickTime MOV video supported for metadata inspection and container sanitization."
                     )
                 }
                 else -> {
@@ -230,10 +230,10 @@ object FileSecurityValidator {
                         detectedFormat = "ISO Media ($majorBrand)",
                         mimeType = "video/mp4",
                         fileCategory = FileCategory.VIDEO,
-                        supportLevel = FormatSupportLevel.SCAN_ONLY,
+                        supportLevel = FormatSupportLevel.SUPPORTED,
                         fileSizeBytes = fileSizeBytes,
                         sanitizedFileName = fileName,
-                        statusMessage = "ISO base media container detected."
+                        statusMessage = "ISO base media container supported for inspection and sanitization."
                     )
                 }
             }

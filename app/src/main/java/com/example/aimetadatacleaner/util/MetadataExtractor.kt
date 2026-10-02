@@ -2,6 +2,7 @@ package com.example.aimetadatacleaner.util
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.exifinterface.media.ExifInterface
@@ -25,17 +26,36 @@ object MetadataExtractor {
         // Determine image dimensions safely
         var width = 0
         var height = 0
-        try {
-            context.contentResolver.openInputStream(uri)?.use { stream ->
-                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeStream(stream, null, options)
-                width = options.outWidth
-                height = options.outHeight
-                if (options.outMimeType != null) {
-                    mimeType = options.outMimeType
+        val isVideo = validation.fileCategory == FileCategory.VIDEO || mimeType.startsWith("video/")
+
+        if (isVideo) {
+            try {
+                val retriever = MediaMetadataRetriever()
+                retriever.setDataSource(context, uri)
+                val vWidth = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
+                val vHeight = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
+                if (vWidth > 0 && vHeight > 0) {
+                    width = vWidth
+                    height = vHeight
                 }
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE)?.let {
+                    if (it.isNotBlank()) mimeType = it
+                }
+                retriever.release()
+            } catch (_: Exception) {}
+        } else {
+            try {
+                context.contentResolver.openInputStream(uri)?.use { stream ->
+                    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    BitmapFactory.decodeStream(stream, null, options)
+                    width = options.outWidth
+                    height = options.outHeight
+                    if (options.outMimeType != null) {
+                        mimeType = options.outMimeType
+                    }
+                }
+            } catch (_: Exception) {
             }
-        } catch (_: Exception) {
         }
 
         val entries = mutableListOf<MetadataEntry>()
@@ -45,6 +65,97 @@ object MetadataExtractor {
         var hasC2pa = false
         var rawPromptText: String? = null
         var aiMetadata: AiGenerationMetadata? = null
+
+        if (isVideo) {
+            try {
+                val retriever = MediaMetadataRetriever()
+                retriever.setDataSource(context, uri)
+
+                val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+                if (durationMs > 0) {
+                    val sec = durationMs / 1000
+                    entries.add(
+                        MetadataEntry(
+                            standard = MetadataStandard.EMBEDDED_OTHER,
+                            category = MetadataCategory.TIMESTAMPS_FILE,
+                            key = "Video Duration",
+                            value = "${sec / 60}m ${sec % 60}s (${durationMs}ms)",
+                            description = "Video stream playback duration"
+                        )
+                    )
+                }
+
+                val location = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_LOCATION)
+                if (!location.isNullOrBlank()) {
+                    hasGpsLocation = true
+                    riskReasons.add("Embedded video GPS coordinates (${location.trim()})")
+                    entries.add(
+                        MetadataEntry(
+                            standard = MetadataStandard.GPS,
+                            category = MetadataCategory.LOCATION,
+                            key = "GPS Geotag (ISO 6709)",
+                            value = location.trim(),
+                            isSensitive = true,
+                            description = "Precise recording coordinates embedded in video container"
+                        )
+                    )
+                }
+
+                val date = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DATE)
+                if (!date.isNullOrBlank()) {
+                    entries.add(
+                        MetadataEntry(
+                            standard = MetadataStandard.EXIF,
+                            category = MetadataCategory.TIMESTAMPS_FILE,
+                            key = "Creation Date",
+                            value = date,
+                            description = "Recording timestamp"
+                        )
+                    )
+                }
+
+                val bitrate = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
+                if (!bitrate.isNullOrBlank()) {
+                    val kbps = bitrate.toLongOrNull()?.let { it / 1000 } ?: bitrate
+                    entries.add(
+                        MetadataEntry(
+                            standard = MetadataStandard.EMBEDDED_OTHER,
+                            category = MetadataCategory.CAMERA_DEVICE,
+                            key = "Bitrate",
+                            value = "$kbps kbps"
+                        )
+                    )
+                }
+
+                val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+                if (!rotation.isNullOrBlank()) {
+                    entries.add(
+                        MetadataEntry(
+                            standard = MetadataStandard.EMBEDDED_OTHER,
+                            category = MetadataCategory.CAMERA_DEVICE,
+                            key = "Rotation",
+                            value = "$rotation°"
+                        )
+                    )
+                }
+
+                val author = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR)
+                if (!author.isNullOrBlank()) {
+                    entries.add(
+                        MetadataEntry(
+                            standard = MetadataStandard.IPTC,
+                            category = MetadataCategory.AUTHOR_SYSTEM,
+                            key = "Author",
+                            value = author,
+                            isSensitive = true,
+                            description = "Author metadata in video container"
+                        )
+                    )
+                }
+
+                retriever.release()
+            } catch (_: Exception) {}
+        }
 
         var exifComment: String? = null
         var exifDescription: String? = null

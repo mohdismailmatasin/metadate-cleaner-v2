@@ -14,9 +14,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FolderZip
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aimetadatacleaner.R
-import com.example.aimetadatacleaner.ui.screens.BatchScreen
 import com.example.aimetadatacleaner.ui.screens.HomeScreen
 import com.example.aimetadatacleaner.ui.screens.HistoryScreen
 import com.example.aimetadatacleaner.ui.screens.PrivacyGuideScreen
@@ -57,10 +55,9 @@ import com.example.aimetadatacleaner.ui.screens.SettingsScreen
 import com.example.aimetadatacleaner.ui.theme.CyanAccent
 
 enum class NavigationTab(val label: String, val icon: ImageVector, val tag: String) {
-    INSPECT("Scanner", Icons.Default.Shield, "tab_clean"),
-    BATCH("Batch", Icons.Default.FolderZip, "tab_batch"),
+    INSPECT("Clean", Icons.Default.Shield, "tab_clean"),
     HISTORY("History", Icons.Default.History, "tab_history"),
-    GUIDE("Guide", Icons.Default.MenuBook, "tab_guide"),
+    GUIDE("Guide", Icons.AutoMirrored.Filled.MenuBook, "tab_guide"),
     SETTINGS("Settings", Icons.Default.Settings, "tab_settings")
 }
 
@@ -99,7 +96,7 @@ fun MainScreen(viewModel: MainViewModel) {
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "AI Metadata Cleaner",
+                            text = "Metadata Cleaner",
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
                             color = MaterialTheme.colorScheme.onSurface
@@ -155,7 +152,6 @@ fun MainScreen(viewModel: MainViewModel) {
         ) {
             when (selectedTab) {
                 NavigationTab.INSPECT -> HomeScreen(viewModel = viewModel)
-                NavigationTab.BATCH -> BatchScreen(viewModel = viewModel)
                 NavigationTab.HISTORY -> HistoryScreen(viewModel = viewModel)
                 NavigationTab.GUIDE -> PrivacyGuideScreen()
                 NavigationTab.SETTINGS -> SettingsScreen(viewModel = viewModel)

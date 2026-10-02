@@ -121,7 +121,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
                     Spacer(modifier = Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "AI Metadata Cleaner",
+                            text = "Metadata Cleaner",
                             fontWeight = FontWeight.Bold,
                             fontSize = 19.sp,
                             color = MaterialTheme.colorScheme.onSurface
@@ -265,7 +265,7 @@ fun SettingsScreen(viewModel: MainViewModel) {
                             onClick = {
                                 val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
                                     data = Uri.parse("mailto:$developerEmail")
-                                    putExtra(Intent.EXTRA_SUBJECT, "AI Metadata Cleaner - Feedback & Inquiry")
+                                    putExtra(Intent.EXTRA_SUBJECT, "Metadata Cleaner - Feedback & Inquiry")
                                 }
                                 try {
                                     context.startActivity(emailIntent)

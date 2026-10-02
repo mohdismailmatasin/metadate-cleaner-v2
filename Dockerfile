@@ -1,9 +1,9 @@
-# AI Metadata Cleaner (aimc) - Privacy Inspector & Sanitizer
+# Metadata Cleaner (aimc) - Privacy Inspector & Sanitizer
 # Production container for local / self-hosted execution
 FROM eclipse-temurin:21-jre-alpine
 
 LABEL maintainer="mohdismailmatasin@gmail.com"
-LABEL description="AI Metadata Cleaner - Privacy Inspector & Metadata Sanitizer"
+LABEL description="Metadata Cleaner - Privacy Inspector & Metadata Sanitizer"
 
 WORKDIR /app
 

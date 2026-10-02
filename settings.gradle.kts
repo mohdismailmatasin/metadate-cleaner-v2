@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AI Metadata Cleaner"
+rootProject.name = "Metadata Cleaner"
 include(":app")
